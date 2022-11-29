@@ -12,6 +12,9 @@ function salvar(event, collection){
     if(document.getElementById('nome').value === '') { alert('⚠ É obrigatório informar o nome!')}
     else if(document.getElementById('email').value === '') { alert('⚠ É obrigatório informar o email!')}
     else if(document.getElementById('nascimento').value === '') { alert('⚠ É obrigatório informar a data de Nascimento!')}
+    else if(document.getElementById('id').value!==''){
+        alterar(event, collection)
+    }
     else {incluir(event, collection)}
 }
 
@@ -100,4 +103,75 @@ function totalRegistros(collection){
         }
     })
     return retorno
+}
+
+/**
+ * remover
+ * Remove os dados da collection a partir do id informado
+ * @param {string} db - Nome da collection no Firebase
+ * @param {integer} id - Id do registro no Firebase
+ * @return {null} - Snapshot atualizado dos dados
+ */
+function remover(db, id){
+    //Iremos confirmar com o usuário
+    if(window.confirm('!!Confirma a exclusão do registro?')){
+        let dadoExclusao = firebase.database().ref().child(db+'/'+id)
+        dadoExclusao.remove()
+        .then(()=>{
+            alert('✅Registro removido com sucesso!')
+        })
+        .catch(error => {
+            alert('❌Falha ao excluir: ' + error.message)
+        })
+    }
+}
+
+function carregaDadosAlteracao(db, id){
+    firebase.database().ref(db).on('value', (snapshot) =>{
+        snapshot.forEach(item => {
+            if(item.ref.path.pieces_[1]===id){
+                //Se for igual ao ID, iremos igualar os campos
+                document.getElementById('id').value=item.ref.path.pieces_[1]
+                document.getElementById('nome').value=item.val().nome
+                document.getElementById('email').value=item.val().email
+                document.getElementById('nascimento').value=item.val().nascimento
+                document.getElementById('salario').value=item.val().salario
+                
+                //campo sexo
+                if(item.val().sexo==='Masculino'){
+                    document.getElementById('sexoM').checked=true
+                }else{
+                    document.getElementById('sexoF').checked=true 
+                }
+            }
+        })
+    })
+}
+
+
+function alterar(event, collection) {
+    event.preventDefault()
+    //Obtendo os campos do formulário
+    const form = document.forms[0];
+    const data = new FormData(form);
+    //Obtendo os valores dos campos
+    const values = Object.fromEntries(data.entries());
+    console.log(values)
+    //Enviando os dados dos campos para o Firebase
+    return firebase.database().ref().child(collection + '/' + values.id).update({
+      nome: values.nome,
+      email: values.email,
+      sexo: values.sexo,
+      nascimento: values.nascimento,
+      salario: values.salario
+    })
+      .then(() => {
+        alert('✅ Registro alterado com sucesso!')
+        document.getElementById('formCadastro').reset()
+      })
+      .catch(error => {
+        console.log(error.code)
+        console.log(error.message)
+        alert('❌ Falha ao alterar: ' + error.message)
+      })
 }
